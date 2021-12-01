@@ -1,0 +1,15 @@
+{
+    "version": "1.0.0",
+    "id": "app.vemto.multi-tenancy",
+    "name": "multi-tenancy",
+    "title": "Multi-Tenancy",
+    "description": "Multiple database multi-tenancy",
+    "image": "",
+    "main": "src/main.js",
+    "vueComponent": "dist/multi-tenancy.umd.min.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/TiagoSilvaPereira/vemto-multi-tenancy-plugin"
+    },
+    "minVemtoVersion": "1.0.1"
+}
