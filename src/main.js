@@ -43,8 +43,10 @@ module.exports = (vemto) => {
         },
  
         addDatabaseConnections() {
-            let databaseFileContent = vemto.readProjectFile('config/database.php'),
-                multitenancySettings = vemto.readPluginFile('files/MysqlSettings.txt')    
+            let projectConnectionType = vemto.getProject().connection.type, // mysql, pgsql, etc
+
+                databaseFileContent = vemto.readProjectFile('config/database.php'),
+                multitenancySettings = vemto.readPluginFile(`files/${projectConnectionType}-settings.txt`)    
             
             if(databaseFileContent.includes(`'tenant' => [`)) {
                 vemto.log.warning('Multi-Tenancy Database configuration already generated. Skipping...')
