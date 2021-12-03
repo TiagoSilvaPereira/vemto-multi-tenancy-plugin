@@ -3,6 +3,11 @@ module.exports = (vemto) => {
     return {
 
         canInstall() {
+            if(vemto.projectHasMultiTenancy()) {
+                vemto.addBlockReason('You already have a multitenancy plugin installed')
+                return false
+            }
+
             return true
         },
 
@@ -10,6 +15,8 @@ module.exports = (vemto) => {
             vemto.savePluginData({
                 text: 'Hello world!!'
             })
+
+            vemto.setMultiTenancyStrategy('multi-database')
         },
 
         composerPackages(packages) {
@@ -18,16 +25,60 @@ module.exports = (vemto) => {
             return packages
         },
 
+        templateReplacements() {
+            vemto.log.message('Replacing stubs from Multi-Tenancy plugin...')
+
+            vemto.replaceTemplate('DatabaseSeeder.vemtl', '/files/templates/DatabaseSeeder.vemtl')
+        },
+
         beforeCodeGenerationEnd() {
-            // let data = vemto.getPluginData()
-
             vemto.log.info(`Configuring Multi-Tenancy`)
-
+            
+            this.addMiddlewares()
             this.publishConfigFile()
             this.editConfigFile()
             this.addDatabaseConnections()
             this.publishLandlordMigration()
-            this.migrateLandlordDatabase()
+            this.migrateAndSeedLandlordDatabase()
+            this.migrateTenantDatabases()
+        },
+
+        beforeRenderModel(template, content) {
+            let data = template.getData(),
+                model = data.model
+
+            return this.addTenancyTraitToModel(content, model)
+        },
+
+        addTenancyTraitToModel(content, model) {
+            let phpFile = vemto.parsePhp(content)
+
+            phpFile.addUseStatement('Spatie\\Multitenancy\\Models\\Concerns\\UsesTenantConnection')
+            phpFile.onClass(model.name).addTrait('UsesTenantConnection')
+
+            vemto.log.message(`Adding UsesTenantConnection trait to ${model.name} model...`)
+
+            return phpFile.getCode()
+        },
+
+        addMiddlewares() {
+            kernelFileContent = vemto.readProjectFile('/app/Http/Kernel.php')  
+            
+            if(kernelFileContent.includes(`NeedsTenant`)) return
+
+            let phpParser = vemto.parsePhp(kernelFileContent),
+                arrays = phpParser.getNestedArraysByName('web')
+
+            phpParser.onArray(arrays[0])
+                .addItem('\\Spatie\\Multitenancy\\Http\\Middleware\\NeedsTenant::class')
+                .addItem('\\Spatie\\Multitenancy\\Http\\Middleware\\EnsureValidTenantSession::class')
+
+            let newKernelFileContent = phpParser.getFormattedCode()
+
+            vemto.writeProjectFile('/app/Http/Kernel.php', newKernelFileContent)
+
+            // Register the file to prevent Vemto overwriting it after manual changes
+            vemto.registerProjectFile('/app/Http/Kernel.php')
         },
 
         publishConfigFile() {
@@ -39,8 +90,6 @@ module.exports = (vemto) => {
             let command = `vendor:publish --provider="Spatie\\Multitenancy\\MultitenancyServiceProvider" --tag="config"`
 
             vemto.executeArtisan(command)
-
-            // Register the file to prevent Vemto overwriting it after manual changes
             vemto.registerProjectFile('/config/multitenancy.php')
         },
 
@@ -49,22 +98,21 @@ module.exports = (vemto) => {
 
             let configFileContent = vemto.readProjectFile('/config/multitenancy.php')
 
-            if(configFileContent.includes(`Spatie\\Multitenancy\\Tasks\\SwitchTenantDatabaseTask::class`)) {
+            if(configFileContent.includes(`DomainTenantFinder`)) {
                 vemto.log.warning('Multi-Tenancy configuration already modified. Skipping...')
                 return
             }
 
+            configFileContent = configFileContent.replace(`'tenant_finder' => null`, `'tenant_finder' => Spatie\\Multitenancy\\TenantFinder\\DomainTenantFinder::class`)
             configFileContent = configFileContent.replace(`'tenant_database_connection_name' => null`, `'tenant_database_connection_name' => 'tenant'`)
             configFileContent = configFileContent.replace(`'landlord_database_connection_name' => null`, `'landlord_database_connection_name' => 'landlord'`)
 
             let phpParser = vemto.parsePhp(configFileContent)
-            phpParser.addItemToNestedNamedArray('switch_tenant_tasks', 'Spatie\\Multitenancy\\Tasks\\SwitchTenantDatabaseTask::class')
+            phpParser.prependItemToNestedNamedArray('switch_tenant_tasks', 'Spatie\\Multitenancy\\Tasks\\SwitchTenantDatabaseTask::class')
 
-            let newConfigFileContent = vemto.formatByLanguage(phpParser.getCode(), 'php')
+            let newConfigFileContent = phpParser.getFormattedCode()
 
             vemto.writeProjectFile('/config/multitenancy.php', newConfigFileContent)
-
-            // Register the file to prevent Vemto overwriting it after manual changes
             vemto.registerProjectFile('/config/multitenancy.php')
         },
  
@@ -79,15 +127,15 @@ module.exports = (vemto) => {
                 return
             }
 
+            databaseFileContent = configFileContent.replace(`env('DB_CONNECTION', 'mysql')`, `'tenant'`)
+
             let phpParser = vemto.parsePhp(databaseFileContent)
             
-            phpParser.addItemToNestedNamedArray('connections', multitenancySettings)
+            phpParser.prependItemToNestedNamedArray('connections', multitenancySettings)
 
-            let newDatabaseConfigContent = vemto.formatByLanguage(phpParser.getCode(), 'php')
+            let newDatabaseConfigContent = phpParser.getFormattedCode()
 
             vemto.writeProjectFile('/config/database.php', newDatabaseConfigContent)
-
-            // Register the file to prevent Vemto overwriting it after manual changes
             vemto.registerProjectFile('/config/database.php')
         },
 
@@ -102,10 +150,18 @@ module.exports = (vemto) => {
             vemto.executeArtisan(command)
         },
 
-        migrateLandlordDatabase() {
-            let command = `migrate --path=database/migrations/landlord --database=landlord`
+        migrateAndSeedLandlordDatabase() {
+            let migrationCommand = `migrate:fresh --path=database/migrations/landlord --database=landlord`,
+                seederCommand = 'db:seed'
 
-            vemto.executeArtisan(command)
+            vemto.executeArtisan(migrationCommand)
+            vemto.executeArtisan(seederCommand)
+        },
+
+        migrateTenantDatabases() {
+            let migrationCommand = `tenants:artisan "migrate:fresh --database=tenant --seed"`
+
+            vemto.executeArtisan(migrationCommand)
         }
 
     }

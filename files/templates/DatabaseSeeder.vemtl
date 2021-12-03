@@ -1,0 +1,72 @@
+<?php
+<# TEMPLATE VARIABLES #>
+<% let modelsNamespace = this.projectHelper.getModelsNamespace() %>
+<####>
+
+<% if(this.project.laravelVersion > 7) { %>
+namespace Database\Seeders;
+<% } %>
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Spatie\Multitenancy\Models\Tenant;
+
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        Tenant::checkCurrent()
+           ? $this->runTenantSpecificSeeders()
+           : $this->runLandlordSpecificSeeders();
+    }
+    
+    public function runTenantSpecificSeeders()
+    {
+        <% if(this.authModelIsDefault) { %>
+            // Adding an admin user
+            <% if(this.project.laravelVersion > 7) { %>
+            $user = \<$ modelsNamespace $>\<$ this.project.authModel.name $>::factory()->count(1)->create([
+                'email' => 'admin@admin.com',
+                'password' => \Hash::make('admin')
+            ]);
+            <% } else { %>
+            $user = factory(<$ modelsNamespace $>\<$ this.project.authModel.name $>::class, 1)->create([
+                'email' => 'admin@admin.com',
+                'password' => \Hash::make('admin')
+            ]);
+            <% } %>
+            <###>
+            <% if(this.generatorSettings.modules.permissions) { %>
+            $this->call(PermissionsSeeder::class);
+            <% } %>
+        <% } %>
+
+        <% for(let model of this.project.models) { %>
+        $this->call(<$ model.name.case('pascalCase') $>Seeder::class);
+        <% } %>
+    }
+
+    public function runLandlordSpecificSeeders()
+    {
+        config([
+          'database.default' => 'landlord',
+        ]);
+        
+        DB::table('tenants')->insert([
+            'name' => 'Tenant 1',
+            'domain' => 'tenant1.test',
+            'database' => 'tenant1'
+        ]);
+
+        DB::table('tenants')->insert([
+            'name' => 'Tenant 2',
+            'domain' => 'tenant2.test',
+            'database' => 'tenant2'
+        ]);
+    }
+}
