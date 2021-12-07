@@ -31,6 +31,15 @@ module.exports = (vemto) => {
             vemto.replaceTemplate('DatabaseSeeder.vemtl', '/files/templates/DatabaseSeeder.vemtl')
         },
 
+        beforeRunnerStart() {
+            vemto.disableDefaultRunnerServer()
+            vemto.disableDefaultRunnerMigrations()
+            vemto.disableDefaultRunnerWebPageTrigger()
+
+            this.migrateAndSeedLandlordDatabase()
+            this.migrateTenantDatabases()
+        },
+
         beforeCodeGenerationEnd() {
             vemto.log.info(`Configuring Multi-Tenancy`)
             
@@ -39,8 +48,6 @@ module.exports = (vemto) => {
             this.editConfigFile()
             this.addDatabaseConnections()
             this.publishLandlordMigration()
-            this.migrateAndSeedLandlordDatabase()
-            this.migrateTenantDatabases()
         },
 
         beforeRenderModel(template, content) {
