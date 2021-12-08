@@ -10,7 +10,7 @@
             </div>
         </div>
 
-        <div class="mt-4">
+        <div class="mt-5">
             <h3 class="block font-bold mb-2">Tenants</h3>
 
             <table class="table-auto w-full">
