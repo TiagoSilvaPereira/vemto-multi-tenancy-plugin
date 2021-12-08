@@ -13,7 +13,11 @@ module.exports = (vemto) => {
 
         onInstall() {
             vemto.savePluginData({
-                text: 'Hello world!!'
+                version: '^1.0',
+                tenants: [
+                    {name: 'Tenant1', domain: 'tenant1.test', 'database': 'tenant1'},
+                    {name: 'Tenant2', domain: 'tenant2.test', 'database': 'tenant2'},
+                ]
             })
 
             vemto.setMultiTenancyStrategy('multi-database')
@@ -35,9 +39,17 @@ module.exports = (vemto) => {
             vemto.disableDefaultRunnerServer()
             vemto.disableDefaultRunnerMigrations()
             vemto.disableDefaultRunnerWebPageTrigger()
+        },
+
+        beforeRunnerEnd() {
+            let data = vemto.getPluginData()
 
             this.migrateAndSeedLandlordDatabase()
             this.migrateTenantDatabases()
+
+            data.tenants.forEach(tenant => {
+                vemto.openLink(`http://${tenant.domain}`)
+            })
         },
 
         beforeCodeGenerationEnd() {
