@@ -24,7 +24,10 @@ module.exports = (vemto) => {
         },
 
         composerPackages(packages) {
-            packages.require['spatie/laravel-multitenancy'] = '^1.0'
+            let data = vemto.getPluginData()
+            
+            // Set the package version from the plugin data (default: ^1.0)
+            packages.require['spatie/laravel-multitenancy'] = data.version
 
             return packages
         },
