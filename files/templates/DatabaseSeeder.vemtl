@@ -51,22 +51,20 @@ class DatabaseSeeder extends Seeder
         <% } %>
     }
 
+    <% let tenants = this.pluginData.tenants %>
     public function runLandlordSpecificSeeders()
     {
         config([
           'database.default' => 'landlord',
         ]);
         
+        <% for(let tenant of tenants) { %>
         DB::table('tenants')->insert([
-            'name' => 'Tenant 1',
-            'domain' => 'tenant1.test',
-            'database' => 'tenant1'
+            'name' => '<$ tenant.name $>',
+            'domain' => '<$ tenant.domain $>',
+            'database' => '<$ tenant.database $>'
         ]);
-
-        DB::table('tenants')->insert([
-            'name' => 'Tenant 2',
-            'domain' => 'tenant2.test',
-            'database' => 'tenant2'
-        ]);
+        
+        <% } %>
     }
 }

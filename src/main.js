@@ -106,7 +106,9 @@ module.exports = (vemto) => {
                 return
             }
 
-            let command = `vendor:publish --provider="Spatie\\Multitenancy\\MultitenancyServiceProvider" --tag="config"`
+            let data = vemto.getPluginData(),
+                tag = data.version === '^1.0' ? 'config' : 'multitenancy-config',
+                command = `vendor:publish --provider="Spatie\\Multitenancy\\MultitenancyServiceProvider" --tag="${tag}"`
 
             vemto.executeArtisan(command)
             vemto.registerProjectFile('/config/multitenancy.php')
@@ -164,7 +166,9 @@ module.exports = (vemto) => {
                 return
             }
 
-            let command = `vendor:publish --provider="Spatie\\Multitenancy\\MultitenancyServiceProvider" --tag="migrations"`
+            let data = vemto.getPluginData(),
+                tag = data.version === '^1.0' ? 'migrations' : 'multitenancy-migrations',
+                command = `vendor:publish --provider="Spatie\\Multitenancy\\MultitenancyServiceProvider" --tag="${tag}"`
 
             vemto.executeArtisan(command)
         },
