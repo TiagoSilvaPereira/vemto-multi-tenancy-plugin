@@ -148,7 +148,7 @@ module.exports = (vemto) => {
                 return
             }
 
-            databaseFileContent = configFileContent.replace(`env('DB_CONNECTION', 'mysql')`, `'tenant'`)
+            databaseFileContent = databaseFileContent.replace(`env('DB_CONNECTION', 'mysql')`, `'tenant'`)
 
             let phpParser = vemto.parsePhp(databaseFileContent)
             
