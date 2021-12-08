@@ -14,7 +14,7 @@ If you want to understand better how the [Laravel Multi-Tenancy](https://spatie.
 
 - Installs the [Laravel Multi-Tenancy package](https://spatie.be/docs/laravel-multitenancy/v1/introduction)
 - Configures the package
-- Configures it to use the "Domain Strategy" to find the tenant
+- Configures it to use the ["Domain Strategy"](https://spatie.be/docs/laravel-multitenancy/v1/installation/determining-current-tenant) to find the tenant
 - Changes the application files to support multi-tenancy (seeders, models, etc)
 - Migrates landlord and tenants tables (*it does not create the databases, please see more details below*)
 - Opens tenant URLs when you run the project
