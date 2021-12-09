@@ -36,6 +36,6 @@ When installing this plugin, the following domains are configured (you can chang
 - tenant1.test (points to tenant1 database)
 - tenant2.test (points to tenant2 database)
 
-This plugin does not add the domains to your operating system's hosts file, nor does it start a server using them. You will need to use some other tool to do this (on macOS you can use [Laravel Valet](https://laravel.com/docs/8.x/valet), on Windows there are other options like [Laragon](https://laragon.org/docs/pretty-urls.html), or you can simply create an [nginx](https://www.nginx.com/) configuration file)
+This plugin does not add the domains to your operating system's hosts file, nor does it start a server using them. You will need to use some other tool to do this (on macOS you can use [Laravel Valet](https://laravel.com/docs/8.x/valet), on Windows there are other options like [Laragon](https://laragon.org/docs/pretty-urls.html), or you can simply run **php artisan serve** passing a custom host and port, or create an [nginx](https://www.nginx.com/) configuration file).
 
 [Learn here how to create Vemto Plugins](https://vemto.app/docs/1.x/creating_plugins)
